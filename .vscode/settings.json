@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "stdio.h": "c",
-        "watchmail_list.h": "c",
-        "types.h": "c"
-    }
-}

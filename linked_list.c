@@ -1,92 +1,97 @@
-/*
-    James Skripchuk & Alina Christenbury
-    CISC361
-    Shell
-*/
+#include <stdio.h> 
+#include <stdlib.h> 
 
+struct Node { 
+    int data; 
+    struct Node* next; 
+    struct Node* prev; 
+}; 
 
-// A simple C program to introduce 
-// a linked list 
-//But also has support for keys and values for alias
-#include<stdio.h> 
-#include<stdlib.h> 
-#include<string.h>
-#include "linked_list.h"
+void push(struct Node** head_ref, int new_data) 
+{
+    struct Node* new_node = (struct Node*)malloc(sizeof(struct Node)); 
+  
+    new_node->data = new_data; 
+  
+    new_node->next = (*head_ref); 
+    new_node->prev = NULL; 
+  
+    if ((*head_ref) != NULL) 
+        (*head_ref)->prev = new_node; 
+  
+    (*head_ref) = new_node; 
+} 
 
-struct Node* append(struct Node* head, char* str, char* key){
-    struct Node* current = head;
+void insertAfter(struct Node* prev_node, int new_data) 
+{
+    if (prev_node == NULL) { 
+        printf("the given previous node cannot be NULL"); 
+        return; 
+    } 
+  
+    struct Node* new_node = (struct Node*)malloc(sizeof(struct Node)); 
+  
+    new_node->data = new_data; 
+  
+    new_node->next = prev_node->next; 
+  
+    prev_node->next = new_node; 
+  
+    new_node->prev = prev_node; 
+  
+    if (new_node->next != NULL) 
+        new_node->next->prev = new_node; 
+} 
+
+void append(struct Node** head_ref, int new_data) 
+{
+    struct Node* new_node = (struct Node*)malloc(sizeof(struct Node)); 
+  
+    struct Node* last = *head_ref;
+  
+    new_node->data = new_data; 
+  
+    new_node->next = NULL; 
+
+    if (*head_ref == NULL) { 
+        new_node->prev = NULL; 
+        *head_ref = new_node; 
+        return; 
+    } 
+  
+    while (last->next != NULL) 
+        last = last->next; 
+
+    last->next = new_node; 
+
+    new_node->prev = last; 
+  
+    return; 
+} 
+
+void printList(struct Node* node) 
+{ 
+    struct Node* last; 
+    printf("\nTraversal in forward direction \n"); 
+    while (node != NULL) { 
+        printf(" %d ", node->data);
+    }
+}
+
+/*void deleteNode(struct Node** head_ref, struct Node* del)
+{
+    if (*head_ref == NULL || del == NULL)
+        return;
     
+    if (*head_ref == del)
+        *head_ref = del->next;
 
-    if(head != NULL){
-        while(current->next != NULL){
-            current = current->next;
-        }
-    }
+    if (del->next != NULL)
+        del->next->prev = del->prev;
 
-    struct Node* new = (struct Node*)malloc(sizeof(struct Node));
-    new->data = (char*)malloc(strlen(str));
-    if(key == NULL){
-        new->key = NULL;
-    }else{
-       new->key = (char*)malloc(strlen(key));
-       strcpy(new->key, key); 
-    }
+    if (del->prev != NULL)
+        del->prev->next = del->next;
 
-    new->next = NULL;
-    strcpy(new->data, str);
-
-    if(head != NULL){
-        current->next = new;
-    }else{
-        head = new;
-    }
-
-    return head;
-}
-
-void traverse(struct Node* head, int num, int keys){
-    struct Node* current = head;
-    int i = 0;
-
-    while(current != NULL && i < num){
-        if(keys == 1){
-            printf("%s (%s)\n", current->data, current->key);
-        }else{
-            printf("%s\n", current->data);
-        }
-        current = current->next;
-        i++;
-    }
-}
-
-//Returns key given a value
-char* find(struct Node* head, char* str){
-    if(head != NULL){
-        struct Node* current = head;
-
-        while(current != NULL){
-            if(strcmp(current->data, str) == 0){
-                char* toReturn = (char*)malloc(strlen(str));
-                strcpy(toReturn, current->key);
-                return toReturn;
-            }
-            current = current->next;
-        }
-    }
-
-    return NULL;
-}
-
-
-void freeAll(struct Node* head){
-    struct Node* current = head;
-    while(current != NULL){
-        struct Node* toDelete = current;
-        current = current->next;
-        if(toDelete->key != NULL){
-            free(toDelete->key);
-        }
-        free(toDelete->data);
-        free(toDelete);
-    }
-}
+    free(del);
+    return;
+}*/

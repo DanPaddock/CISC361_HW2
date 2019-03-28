@@ -1,16 +1,15 @@
-struct Node  
-{ 
-  char* key;
-  char* data; 
-  struct Node *next; 
+struct Node { 
+    int data; 
+    struct Node* next; 
+    struct Node* prev; 
 };
 
-struct Node* append(struct Node*, char*, char*);
+void push(struct Node** head_ref, int new_data);
 
-void traverse(struct Node*, int num, int keys);
+void append(struct Node** head_ref, int new_data);
 
-char* find(struct Node*, char* );
+void insertAfter(struct Node* prev_node, int new_data);
 
-void update(struct Node*, char* old_str, char*);
+void printList(struct Node* node);
 
-void freeAll(struct Node*);
+//void deleteNode(Node** head_ref, struct Node* del);
