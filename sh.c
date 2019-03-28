@@ -20,7 +20,16 @@
 #include <signal.h>
 #include <errno.h>
 
-#define BUFFER_SIZE 1000
+#define buf_size 1000
+
+int uid, i, status, argsct, go = 1;
+struct passwd *password_entry;
+char *homedir;
+struct pathelement *pathlist;
+char *command, *arg, *commandpath, *p, *pwd, *owd, *cwd;
+char *prompt_prefix = NULL;
+int len;
+char buf[buf_size];
 
 void handle_sigchild(int sig) {
     while (waitpid((pid_t) (-1), 0, WNOHANG) > 0) {}
@@ -40,27 +49,16 @@ char *commands[] = {
     "setenv"
 };
 
-    int uid, i, status, argsct, go = 1;
-    struct passwd *password_entry;
-    char *homedir;
-    struct pathelement *pathlist;
-
-        char *command, *arg, *commandpath, *p, *pwd, *owd, *cwd;
-            char *prompt_prefix = NULL;
-            int len;
-    char buf[BUFFER_SIZE];
-
 int sh(int argc, char **argv, char **envp) {
     
     prompt_prefix = (char *) malloc(0);
     char *prompt = calloc(PROMPTMAX, sizeof(char));
     char **args = calloc(MAXARGS, sizeof(char *));
-
     uid = getuid();
-   password_entry = getpwuid(uid);
-   homedir = password_entry->pw_dir;
+    password_entry = getpwuid(uid);
+    homedir = password_entry->pw_dir;
 
-    if ((pwd = getcwd(buf, BUFFER_SIZE + 1)) == NULL) {
+    if ((pwd = getcwd(buf, buf_size + 1)) == NULL) {
         perror("getcwd");
         exit(2);
     }
@@ -90,15 +88,15 @@ int sh(int argc, char **argv, char **envp) {
 
         printf("%s[%s]>> ", prompt_prefix, cwd);
 
-        fgets(buf, BUFFER_SIZE, stdin);
+        fgets(buf, buf_size, stdin);
         len = (int) strlen(buf);
 
         if (len >= 2) {
             buf[len - 1] = '\0';
             string_input = (char *) malloc(len);
-            char *string_input_alias_find = (char *) malloc(len);
+            char *input = (char *) malloc(len);
             strcpy(string_input, buf);
-            strcpy(string_input_alias_find, buf);
+            strcpy(input, buf);
 
             char * pch;
             char * command = "";
@@ -241,10 +239,8 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
             break;
         case 1: // which
             if (args_len == 1) {
-                printf("%s", "which: Too few arguments.\n");
+                printf("Too few arguments... Usage: which [file_name]\n");
             } else {
-                //Iterate though all following args
-                //Print out more than one if it exits
                 for (int i = 1; i < args_len; i++) {
                     if (args[i] != NULL) {
                         char *result = which(args[i], pathlist);
@@ -262,7 +258,7 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
             break;
         case 2: // where
             if (args_len == 1) {
-                printf("%s", "where: Too few arguments.\n");
+                printf("Too few arguments... Usage: where [file_name]\n");
             } else {
                 for (int i = 1; i < args_len; i++) {
                     if (args[i] != NULL) {
@@ -284,7 +280,7 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
             char *cd_path = args[1];
 
             if (args_len > 2) {
-                perror("cd: Too many arguments");
+                perror("Too few arguments... Usage: cd [directory]\n");
             } else {
                 if (args_len == 1) {
                     cd_path = homedir;
@@ -292,14 +288,14 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
                     cd_path = args[1];
                 }
 
-                if ((pwd = getcwd(buf, BUFFER_SIZE + 1)) == NULL) {
+                if ((pwd = getcwd(buf, buf_size + 1)) == NULL) {
                     perror("getcwd");
                     exit(2);
                 }
 
                 if (cd_path[0] == '-') {
                     if (chdir(owd) < 0) {
-                        printf("Invalid Directory: %d\n", errno);
+                        printf("Directory Not Found: %d\n", errno);
                     } else {
                         free(cwd);
                         cwd = malloc((int) strlen(owd));
@@ -312,13 +308,13 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
                     }
                 } else {
                     if (chdir(cd_path) < 0) {
-                        printf("Invalid Directory: %d\n", errno);
+                        printf("Directory Not Found: %d\n", errno);
                     } else {
                         free(owd);
                         owd = malloc((int) strlen(buf));
                         strcpy(owd, buf);
 
-                        if ((pwd = getcwd(buf, BUFFER_SIZE + 1)) == NULL) {
+                        if ((pwd = getcwd(buf, buf_size + 1)) == NULL) {
                             perror("getcwd");
                             exit(2);
                         }
@@ -361,13 +357,13 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
                 pid_num = strtol(pid_str, &end, 10);
                 
                 if (end == pid_str) {
-                    printf("%s\n", "Cannot convert string to number");
+                    printf("%s\n", "Conversion Error!");
                 }
                 signal_str[0] = ' ';
                 sig_num = strtol(signal_str, &end, 10);
 
                 if (end == signal_str) {
-                    printf("%s\n", "Cannot convert string to number");
+                    printf("%s\n", "Conversion Error!");
                 }
 
                 int id = (int) pid_num;
@@ -379,18 +375,18 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
                 long num;
                 num = strtol(pid_str, &end, 10);
                 if (end == pid_str) {
-                    printf("%s\n", "Cannot convert string to number");
+                    printf("%s\n", "Conversion Error!");
                 }
                 int id = (int) num;
                 kill(id, SIGTERM);
             } else {
-                printf("%s\n", "kill: Incorrect amount of arguments");
+                printf("Invalid Arguments... Usage: kill [number]");
             }
             break;
         case 8: // prompt
             free(prompt_prefix);
             if (args_len == 1) {
-                fgets(buf, BUFFER_SIZE, stdin);
+                fgets(buf, buf_size, stdin);
                 len = (int) strlen(buf);
                 buf[len - 1] = '\0';
                 prompt_prefix = (char *) malloc(len);
@@ -409,15 +405,14 @@ void run_command(int command_index, char** args, char* pathlist, int args_len, c
             } else if (args_len == 2) {
                 setenv(args[1], "", 1);
             } else if (args_len == 3) {
-                //Reset vars
                 setenv(args[1], args[2], 1);
-                if (strcmp(args[1], "HOME") == 0) {
-                    homedir = getenv("HOME");
+                if (strcmp(args[1], "homedir") == 0) {
+                    homedir = getenv("homedir");
                 } else if (strcmp(args[1], "PATH") == 0) {
                     pathlist = get_path();
                 }
             } else {
-                printf("%s\n", "setenv: Incorrect amount of arguments");
+                printf("Too few arguments... Usage: setenv [arguments]\n");
             }
             break;
         default:
@@ -442,12 +437,10 @@ void printenv(int args_len, char **envp, char **args) {
 
 
 char *which(char *command, struct pathelement *pathlist) {
-    char CAT_BUFFER[BUFFER_SIZE];
+    char e_buf[buf_size];
     struct pathelement *current = pathlist;
-
     DIR *dr;
     struct dirent *de;
-
     while (current != NULL) {
 
         char *path = current->element;
@@ -459,13 +452,13 @@ char *which(char *command, struct pathelement *pathlist) {
             while ((de = readdir(dr)) != NULL) {
 
                 if (strcmp(de->d_name, command) == 0) {
-                    strcpy(CAT_BUFFER, path);
-                    strcat(CAT_BUFFER, "/");
-                    strcat(CAT_BUFFER, de->d_name);
+                    strcpy(e_buf, path);
+                    strcat(e_buf, "/");
+                    strcat(e_buf, de->d_name);
 
-                    int len = (int) strlen(CAT_BUFFER);
+                    int len = (int) strlen(e_buf);
                     char *p = (char *) malloc(len);
-                    strcpy(p, CAT_BUFFER);
+                    strcpy(p, e_buf);
 
                     closedir(dr);
 
@@ -481,22 +474,22 @@ char *which(char *command, struct pathelement *pathlist) {
 }
 
 char *where(char *command, struct pathelement *pathlist) {
-    char CAT_BUFFER[BUFFER_SIZE];
+    char e_buf[buf_size];
     struct pathelement *current = pathlist;
 
     DIR *dr;
     struct dirent *de;
-    strcpy(CAT_BUFFER, "");
+    strcpy(e_buf, "");
     while (current != NULL) {
         char *path = current->element;
         dr = opendir(path);
         if(dr){
             while ((de = readdir(dr)) != NULL) {
                 if (strcmp(de->d_name, command) == 0) {
-                    strcat(CAT_BUFFER, path);
-                    strcat(CAT_BUFFER, "/");
-                    strcat(CAT_BUFFER, de->d_name);
-                    strcat(CAT_BUFFER, "\n");
+                    strcat(e_buf, path);
+                    strcat(e_buf, "/");
+                    strcat(e_buf, de->d_name);
+                    strcat(e_buf, "\n");
                 }
             }
         }
@@ -504,10 +497,10 @@ char *where(char *command, struct pathelement *pathlist) {
         current = current->next;
     }
 
-    int len = (int) strlen(CAT_BUFFER);
+    int len = (int) strlen(e_buf);
     char *p = (char *) malloc(len);
-    CAT_BUFFER[len - 1] = '\0';
-    strcpy(p, CAT_BUFFER);
+    e_buf[len - 1] = '\0';
+    strcpy(p, e_buf);
 
     return p;
 } /* where() */
